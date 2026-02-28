@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-config
+  labels:
+    app: gateway
+data:
+  REDIS_URL: redis://redis.default.svc.cluster.local:6379/0
+  RATE_LIMIT_PER_MINUTE: "10"
+  CHROMA_URL: http://chroma.default.svc.cluster.local:8000
+  CHROMA_COLLECTION: rag_docs
+  CHROMA_TOP_K: "3"
+  OLLAMA_BASE_URL: http://ollama.default.svc.cluster.local:11434
+  OLLAMA_MODEL: qwen2.5:1.5b
+  OLLAMA_EMBED_MODEL: bge-m3
+  HTTP_TIMEOUT_SECONDS: "60"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  labels:
+    app: gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      containers:
+        - name: gateway
+          image: csd-gateway:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: gateway-config
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+  labels:
+    app: gateway
+spec:
+  type: ClusterIP
+  selector:
+    app: gateway
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+      protocol: TCP
