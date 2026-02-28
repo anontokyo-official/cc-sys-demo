@@ -67,6 +67,8 @@ coursebot/
 
 ---
 
+// 把M0 M1合并起来，统一作为M0，花费时间为2周
+
 # M0（第 1 次，1 周）——开阿里云 + Nginx + 博客上线（基础环境）
 
 **目标**：先把“云上可访问服务”跑起来：有公网 IP、有 Nginx、有可访问博客页面，为后续 API 部署准备统一入口。
@@ -99,7 +101,7 @@ coursebot/
 对应 Lecture 1–2：SaaS/PaaS/IaaS 的“手感”要出现了。
 
 **目标**：在云主机上落地 CourseBot API：先有统一接口，再接入 SaaS Provider，并做基础 usage 统计。
-（你也可以直接要求学生用一个“兼容 OpenAI 的网关库”，比如 LiteLLM 的 SDK/Proxy 思路，用来统一不同厂商接口。([LiteLLM][1])）
+// saas平台就用硅基流动的，有提供免费模型
 
 ### 具体步骤
 
@@ -111,8 +113,8 @@ coursebot/
 2. `services/llm-adapter` 定义统一接口并实现两个 provider：
 
    * `FakeProvider`（本地调试）
-   * `SaaSProvider`（OpenAI/Claude/通义任一）
-3. `SaaSProvider` 基础可靠性：
+   * `SaaSProvider`（OpenAI/Claude/通义任一） // 用硅基流动
+3. `SaaSProvider` 基础可靠性： // 这个删掉，目前不要api key和重试
 
    * 从环境变量读取 API Key
    * 超时、重试（最多 2 次）
@@ -144,13 +146,13 @@ Ollama 用 Docker 跑是非常教学友好的标准路径。([Ollama 文档][2])
 ### 具体步骤
 
 1. 学生本机/云 VM 安装 Docker（无 GPU 也可完成）
-2. 启动 Ollama（按官方 Docker 方式）
+2. 启动 Ollama（按官方 Docker 方式） 
 
    * 挂载卷保存模型缓存（避免每次重下）([Ollama 文档][2])
 3. 在 gateway 代码中接入 `OllamaProvider`：
 
    * 通过 HTTP 调用 Ollama API（生成/流式可选）
-4. 做一个“后端可切换”配置：
+4. 做一个“后端可切换”配置： // 不要这样，在gateway里面做成模型名称前缀映射，比如 ollama/aaa 映射到ollama的aaa模型，saas/bbb 映射到硅基流动的bbb模型
 
    * `LLM_PROVIDER=saas|ollama`
 5. 加一个回归测试：
@@ -190,7 +192,7 @@ Ollama 用 Docker 跑是非常教学友好的标准路径。([Ollama 文档][2])
 
    * key：`hash(model + prompt + rag_context_version)`
    * TTL：比如 10 分钟
-4. 增加“网络实验”：
+4. 增加“网络实验”： 
 
    * 在 compose 内模拟额外延迟（tc/netem，可选）
    * 观察 latency 变化（写进实验报告）
@@ -206,6 +208,8 @@ Ollama 用 Docker 跑是非常教学友好的标准路径。([Ollama 文档][2])
 ---
 
 # M4（第 5 次，2 周）——RAG：同一个产品开始“有脑子”（微服务化前夜）
+
+// 到这里得部署chroma了，加进去，然后要用chroma接入ollama上面跑的bge-m3模型，中文支持比较好
 
 对应 Lecture 11（微服务）与 Lecture 13（存储）的桥段：数据要进来、可检索、可更新。
 
@@ -227,7 +231,7 @@ Ollama 用 Docker 跑是非常教学友好的标准路径。([Ollama 文档][2])
    * `system`：回答必须引用检索片段（最少 1 条）
    * `user`：原问题
    * `context`：top_k chunks
-5. 增加“版本化”：
+5. 增加“版本化”： // chroma能版本管理吗？我不太清楚
 
    * 文档库版本号（hash）
    * 缓存 key 里要包含版本号，避免旧答案污染
@@ -248,7 +252,7 @@ Ollama 用 Docker 跑是非常教学友好的标准路径。([Ollama 文档][2])
 
 ### 具体步骤
 
-1. 写 `infra/k8s/namespace.yaml`
+1. 写 `infra/k8s/namespace.yaml` // namespace就用default的就行，不要过多涉及到namespace
 2. 把 gateway、redis、向量库、ollama（可选）写成 Deployment + Service
 3. 为“模型缓存/向量库数据”加 PVC
 
@@ -283,7 +287,7 @@ Ollama 用 Docker 跑是非常教学友好的标准路径。([Ollama 文档][2])
 
    * `gateway_llm_active_requests`（Gauge）
    * `gateway_llm_requests_total`（Counter，可选但推荐）
-   * `gateway_llm_request_latency_seconds`（Histogram，可选但推荐）
+   * `gateway_llm_request_latency_seconds`（Histogram，可选但推荐） 
 2. 部署 Prometheus：
 
    * 抓取 `gateway` 的 `/metrics`
