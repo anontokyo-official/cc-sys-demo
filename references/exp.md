@@ -15,7 +15,7 @@
   * `GET /metrics`（Prometheus 指标）
 * 支持两种后端（通过配置切换）
 
-  1. SaaS 模型（OpenAI/Claude/通义等）
+  1. SaaS 模型（硅基流动）
   2. 本地模型（Ollama）
 * 支持 RAG：文档入库→向量检索→拼接上下文→生成答案
 * 支持缓存（Redis）、基本鉴权与限流、可观测性、扩缩容策略
@@ -56,7 +56,7 @@ coursebot/
 
 ## 里程碑总览（尽量对齐 lecture，但不被“周次”绑死）
 
-* **M0–M1**：Lecture 1–2（云计算/服务模型）——“先跑起来：SaaS 调用 + 统一接口”
+* **M0（2 周）**：Lecture 1–2（云计算/服务模型）——“阿里云部署 + SaaS 调用 + 统一接口”
 * **M2–M3**：Lecture 6–9（虚拟化/容器/虚拟网络）——“本地模型 + 容器化 + Compose 编排”
 * **M4–M5**：Lecture 11–13（微服务/云原生/存储）——“RAG + 微服务拆分 + K8s + PVC”
 * **M6–M7**：Lecture 15–16（AIOps/资源优化）——“Prometheus/Grafana 可观测性 + KEDA 自动扩缩容”
@@ -67,71 +67,46 @@ coursebot/
 
 ---
 
-// 把M0 M1合并起来，统一作为M0，花费时间为2周
+# M0（第 1–2 次，2 周）——阿里云 + Nginx + 博客 + CourseBot API 初版
 
-# M0（第 1 次，1 周）——开阿里云 + Nginx + 博客上线（基础环境）
-
-**目标**：先把“云上可访问服务”跑起来：有公网 IP、有 Nginx、有可访问博客页面，为后续 API 部署准备统一入口。
-**新增能力**：云主机开通、基础运维、Nginx 反向代理/静态站点、基础安全配置。
+**目标**：前两周完成从“云上站点上线”到“CourseBot API 可调用”的闭环，并固定 SaaS 平台为硅基流动（优先使用免费模型）。
+**新增能力**：云主机开通、基础运维、Nginx、API 网关、统一 LLM 接口、usage 日志统计。
 
 ### 具体步骤
 
-1. 开通阿里云 ECS（或同类云主机），完成 SSH 登录、时区/用户/防火墙初始化
-2. 安装并配置 Nginx：
+1. 第 1 周：开通阿里云 ECS，完成 SSH 登录、时区/用户/防火墙初始化
+2. 第 1 周：安装并配置 Nginx：
 
    * 可访问默认首页
    * 配置 `server_name` 与静态目录
-3. 部署一个简单博客（Hexo/Hugo/纯静态均可）到 Nginx
-4. 基础安全加固：
+3. 第 1 周：部署一个简单博客（Hexo/Hugo/纯静态均可）到 Nginx
+4. 第 1 周：基础安全加固：
 
    * 仅开放必须端口（22/80/443）
    * 禁止弱口令，记录初始运维命令
-5. 在 README 增加“云主机初始化手册”
+5. 第 2 周：创建仓库骨架并实现 `apps/gateway`（FastAPI）：
+
+   * `POST /v1/chat/completions`
+   * `GET /healthz`
+   * `GET /readyz`
+6. 第 2 周：`services/llm-adapter` 定义统一接口并实现两个 provider：
+
+   * `FakeProvider`（本地调试）
+   * `SaaSProvider`（固定为硅基流动）
+7. 第 2 周：在 gateway 返回中新增 `usage` 字段，并记录日志：
+
+   * `prompt_tokens`、`completion_tokens`、`latency_ms`
+8. 第 2 周：增加 5+ 单测：
+
+   * Provider mock（不依赖外网）
+   * 失败场景返回合理错误
 
 ### 验收标准
 
 * 浏览器可通过公网地址访问博客首页
 * 给出 Nginx 配置片段与部署截图
-* README 有“如何从 0 新建云主机并上线静态站点”
-
----
-
-# M1（第 2 次，1 周）——CourseBot API 初版 + SaaS 接入（当前 M0/M1 能力）
-
-对应 Lecture 1–2：SaaS/PaaS/IaaS 的“手感”要出现了。
-
-**目标**：在云主机上落地 CourseBot API：先有统一接口，再接入 SaaS Provider，并做基础 usage 统计。
-// saas平台就用硅基流动的，有提供免费模型
-
-### 具体步骤
-
-1. 创建仓库骨架并实现 `apps/gateway`（FastAPI）：
-
-   * `POST /v1/chat/completions`
-   * `GET /healthz`
-   * `GET /readyz`
-2. `services/llm-adapter` 定义统一接口并实现两个 provider：
-
-   * `FakeProvider`（本地调试）
-   * `SaaSProvider`（OpenAI/Claude/通义任一） // 用硅基流动
-3. `SaaSProvider` 基础可靠性： // 这个删掉，目前不要api key和重试
-
-   * 从环境变量读取 API Key
-   * 超时、重试（最多 2 次）
-4. 在 gateway 返回中新增 `usage` 字段（哪怕先估算）
-5. 加“成本观念”：
-
-   * 记录每次请求：prompt tokens、completion tokens、latency
-   * 写入日志（后面做 AIOps 会用）
-6. 增加 5+ 单测：
-
-   * Provider mock（不要真打外网也能跑 CI）
-   * 超时/失败时返回合理错误
-
-### 验收标准
-
-* README 有“如何配置 API Key、如何切换 provider”
-* `make demo` 展示一次真实调用（老师可现场用自己的 key）
+* `make demo` 可调用 `POST /v1/chat/completions`，并返回 `usage`
+* README 同时包含“云主机初始化手册”和“硅基流动接入说明”
 * 日志中能看到 latency 与 token 统计字段
 
 ---
@@ -152,9 +127,11 @@ Ollama 用 Docker 跑是非常教学友好的标准路径。([Ollama 文档][2])
 3. 在 gateway 代码中接入 `OllamaProvider`：
 
    * 通过 HTTP 调用 Ollama API（生成/流式可选）
-4. 做一个“后端可切换”配置： // 不要这样，在gateway里面做成模型名称前缀映射，比如 ollama/aaa 映射到ollama的aaa模型，saas/bbb 映射到硅基流动的bbb模型
+4. 在 gateway 实现“模型名称前缀映射”路由：
 
-   * `LLM_PROVIDER=saas|ollama`
+   * `ollama/<model>` 映射到 Ollama 的 `<model>`
+   * `saas/<model>` 映射到硅基流动的 `<model>`
+   * 统一由 `model` 字段决定后端，不再使用 `LLM_PROVIDER=...` 二选一
 5. 加一个回归测试：
 
    * 没有 Ollama 时要报清楚错误（`readyz` 变红）
@@ -165,7 +142,7 @@ Ollama 用 Docker 跑是非常教学友好的标准路径。([Ollama 文档][2])
 
 ### 验收标准
 
-* `make demo` 能演示：同一套 API，通过配置切换 SaaS / Ollama
+* `make demo` 能演示：同一套 API，通过 `model` 前缀切换 SaaS / Ollama
 * `GET /readyz` 会检查：Ollama 连通性
 * README 给出“无 GPU 的 CPU 小模型兜底策略”（比如选更小模型）
 
@@ -209,20 +186,18 @@ Ollama 用 Docker 跑是非常教学友好的标准路径。([Ollama 文档][2])
 
 # M4（第 5 次，2 周）——RAG：同一个产品开始“有脑子”（微服务化前夜）
 
-// 到这里得部署chroma了，加进去，然后要用chroma接入ollama上面跑的bge-m3模型，中文支持比较好
-
 对应 Lecture 11（微服务）与 Lecture 13（存储）的桥段：数据要进来、可检索、可更新。
 
-**目标**：在同一个 CourseBot 上加 RAG（先不拆服务也行，但接口要为拆分做准备）。
+**目标**：在同一个 CourseBot 上加 RAG，并固定部署 Chroma；embedding 使用 Ollama 上运行的 `bge-m3`（中文效果更好）。
 
 ### 具体步骤
 
-1. 选向量库（教学建议：Chroma/pgvector 任选其一）
+1. 固定向量库为 Chroma，并在环境中完成部署与连通性检查
 2. 新增 `services/ingestor`：
 
    * 支持把一批 markdown/pdf/txt 文档切 chunk
-   * 生成 embedding
-   * 写入向量库
+   * 调用 Ollama 的 `bge-m3` 生成 embedding
+   * 写入 Chroma
 3. 新增 `services/retriever`：
 
    * `retrieve(query, top_k) -> chunks`
@@ -231,10 +206,10 @@ Ollama 用 Docker 跑是非常教学友好的标准路径。([Ollama 文档][2])
    * `system`：回答必须引用检索片段（最少 1 条）
    * `user`：原问题
    * `context`：top_k chunks
-5. 增加“版本化”： // chroma能版本管理吗？我不太清楚
+5. 增加“文档版本标识”：
 
-   * 文档库版本号（hash）
-   * 缓存 key 里要包含版本号，避免旧答案污染
+   * Chroma 不做内建版本管理，课程里使用 `collection` 命名或 `metadata.docset_version` 维护版本
+   * 缓存 key 里包含 `docset_version`，避免旧答案污染
 
 ### 验收标准
 
@@ -252,8 +227,8 @@ Ollama 用 Docker 跑是非常教学友好的标准路径。([Ollama 文档][2])
 
 ### 具体步骤
 
-1. 写 `infra/k8s/namespace.yaml` // namespace就用default的就行，不要过多涉及到namespace
-2. 把 gateway、redis、向量库、ollama（可选）写成 Deployment + Service
+1. 使用 `default` namespace，清单中不单独引入 namespace 资源
+2. 把 gateway、redis、chroma、ollama 写成 Deployment + Service
 3. 为“模型缓存/向量库数据”加 PVC
 
    * 解释 accessModes（比如 RWO）与 storage request（写在报告里）([Kubernetes][3])
@@ -447,7 +422,6 @@ Ollama 用 Docker 跑是非常教学友好的标准路径。([Ollama 文档][2])
 如果你要把这套大纲直接塞进课程大纲里，我建议你把每次作业命名成：
 **“CourseBot：从 m0 到 m9 的演化”**，学生做完会天然有一种“我一直在造同一艘船，只是越造越能出海”的感觉——而不是每周做一个互相不认识的玩具。
 
-[1]: https://docs.litellm.ai/docs/?utm_source=chatgpt.com "LiteLLM - Getting Started"
 [2]: https://docs.ollama.com/docker?utm_source=chatgpt.com "Docker - Ollama"
 [3]: https://kubernetes.io/docs/concepts/storage/persistent-volumes/?utm_source=chatgpt.com "Persistent Volumes - Kubernetes"
 [4]: https://kubernetes.io/zh-cn/docs/reference/kubernetes-api/service-resources/ingress-v1/?utm_source=chatgpt.com "Ingress | Kubernetes"
