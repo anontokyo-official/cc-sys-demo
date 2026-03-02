@@ -74,29 +74,22 @@ coursebot/
 
 ### 具体步骤
 
-1. 第 1 周：开通阿里云 ECS，完成 SSH 登录、时区/用户/防火墙初始化
-2. 第 1 周：安装并配置 Nginx：
-
-   * 可访问默认首页
-   * 配置 `server_name` 与静态目录
+1. 第 1 周：开通阿里云 ECS，完成 SSH 登录
+2. 第 1 周：安装并配置 Nginx
 3. 第 1 周：部署一个简单博客（Hexo/Hugo/纯静态均可）到 Nginx
-4. 第 1 周：基础安全加固：
-
-   * 仅开放必须端口（22/80/443）
-   * 禁止弱口令，记录初始运维命令
-5. 第 2 周：创建仓库骨架并实现 `apps/gateway`（FastAPI）：
+4. 第 2 周：创建仓库骨架并实现 `apps/gateway`（FastAPI）：
 
    * `POST /v1/chat/completions`
    * `GET /healthz`
    * `GET /readyz`
-6. 第 2 周：`services/llm-adapter` 定义统一接口并实现两个 provider：
+5. 第 2 周：`services/llm-adapter` 定义统一接口并实现两个 provider：
 
    * `FakeProvider`（本地调试）
    * `SaaSProvider`（固定为硅基流动）
-7. 第 2 周：在 gateway 返回中新增 `usage` 字段，并记录日志：
+6. 第 2 周：在 gateway 返回中新增 `usage` 字段，并记录日志：
 
    * `prompt_tokens`、`completion_tokens`、`latency_ms`
-8. 第 2 周：增加 5+ 单测：
+7. 第 2 周：增加 5+ 单测：
 
    * Provider mock（不依赖外网）
    * 失败场景返回合理错误

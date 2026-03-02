@@ -15,7 +15,8 @@ Gemini Business（免费大额度Gemini 3.x Pro，只需邮箱即可薅，有手
 - 问「怎么配置阿里云安全组放行所有端口」
 - 问「Windows下如何使用ssh，常用命令是什么」
 - 贴nginx配置文件、完整错误截图等，问「为什么反代/blog博客无法访问，XXX（具体问题）」
-- 贴本文档全部内容，问「教我一步步完成这个作业」
+- **贴本文档全部内容，问「我完全是电脑小白，教我一步步完成这个作业」**
+- **贴本文档全部内容，然后再单独贴其中某一句话，问「这句话啥意思」**
 
 ## 开通阿里云
 
@@ -114,9 +115,88 @@ curl localhost:80
 
 ![](https://public.ptree.top/picgo/2026/03/1772416239/PixPin_2026-03-02_09-50-37.jpg)
 
+## CourseBot API 初版
+
+根据课程实验大纲 M0，本次实验除云主机与博客外，还需要完成一个最小可用的 LLM API 服务（CourseBot 初版）。
+
+### 参考目录结构（M0 版本）
+
+```text
+coursebot/
+  apps/
+    gateway/              # FastAPI 对外 API
+  services/
+    llm-adapter/          # 统一模型接口
+  packages/
+    common/               # 配置、日志、错误码、工具函数（可选）
+  scripts/
+    demo.sh               # 演示脚本（可选）
+  README.md
+```
+
+### 实现要求
+
+1. 创建 `apps/gateway`（推荐python+FastAPI，你用别的语言实现也行），至少实现 3 个接口：
+   - `POST /v1/chat/completions`（要真能聊天，目前先接入openrouter）
+   - `GET /healthz`
+   - `GET /readyz`
+   
+2. 创建 `services/llm-adapter`，定义统一 Provider 接口，并实现：
+   - `FakeProvider`（占位，目的是看你的实现是否面向对象）
+   - `SaaSProvider`（目前固定使用openrouter，可优先选择免费模型）
+   
+3. `POST /v1/chat/completions` 的响应中必须包含 `usage` 字段，至少包括：
+   
+   - `prompt_tokens`
+   - `completion_tokens`
+   - `latency_ms`
+   
+   **具体可参考OpenAI官方文档，或直接问AI「openai格式接口的/v1/chat/completions请求，response长什么样，usage中prompt_tokens、completion_tokens、latency_ms这三个东西放在哪，举例说明」**
+
+### 演示方式
+
+- 通过 `curl` 演示一次 `POST /v1/chat/completions` 调用并展示返回的 `usage`
+  - 这个接口请求和响应体是啥，请自行问AI或看openai官方文档
+
+- 演示 `GET /healthz` 与 `GET /readyz` 均可用（200）
+
+### 关于openrouter
+
+提供众多厂商模型中转，不乏许多免费模型。
+
+提供的是标准的openai格式。
+
+在这注册账号：https://openrouter.ai/
+
+然后：https://openrouter.ai/settings/privacy
+
+![PixPin_2026-03-02_10-28-15](https://public.ptree.top/picgo/2026/03/1772418498/PixPin_2026-03-02_10-28-15.jpg)
+
+这个打开，不然用不了免费模型。
+
+去这里找免费模型：https://openrouter.ai/models?fmt=cards&input_modalities=text&order=pricing-low-to-high
+
+比如：https://openrouter.ai/openai/gpt-oss-20b:free
+
+模型id：openai/gpt-oss-20b:free
+
+设置里创建api key：https://openrouter.ai/settings/keys
+
+![PixPin_2026-03-02_10-32-14](https://public.ptree.top/picgo/2026/03/1772418760/PixPin_2026-03-02_10-32-14.jpg)
+
+接入Cherry Studio先试试（没有的话下个，这个客户端很好用）：
+
+![PixPin_2026-03-02_10-29-49](https://public.ptree.top/picgo/2026/03/1772418601/PixPin_2026-03-02_10-29-49.jpg)
+
+![PixPin_2026-03-02_10-29-57](https://public.ptree.top/picgo/2026/03/1772418607/PixPin_2026-03-02_10-29-57.jpg)
+
+![PixPin_2026-03-02_10-31-23](https://public.ptree.top/picgo/2026/03/1772418685/PixPin_2026-03-02_10-31-23.jpg)
+
+OK接口可用，之后由你自己写代码了。
+
 ## 作业要求
 
-**任务一（60 分）：**
+**任务一（30 分）：**
 
 在完成以上步骤的基础上，将Nginx默认欢迎页**替换为你自己的页面**。
 
@@ -128,12 +208,30 @@ curl localhost:80
 
 ------
 
-**任务二（40 分）：**
+**任务二（30 分）：**
 
 1. 在云服务器上搭建一个博客。你可以自由地选择博客框架（如 WordPress、Typecho、Hexo 等）以及搭建方式。
 2. 通过 Nginx 配置反向代理，使得访问 `http://<云服务器IP>/blog ` 时即为你的博客首页。
 3. 完成后，在博客发布一篇博文，其内容应包含"SYSU-SSE"字样。
 4. **将这篇博文的链接写进作业文档**（请确保该链接在本次作业提交DDL之后的至少3天内可访问，即云服务器需要处于启动状态），无需其他文字及配图 。
+
+------
+
+**任务三（40 分）：CourseBot API（LLM）初版**
+
+1. 在同一仓库中实现 `apps/gateway` 与 `services/llm-adapter`，并提供：
+   - `POST /v1/chat/completions`（要真能聊，stream=True/False均可，接入openrouter，用啥模型无所谓）
+   - `GET /healthz`
+   - `GET /readyz`
+2. 完成统一 Provider 接口，并同时支持：
+   - `FakeProvider`
+   - `SaaSProvider`（接openrouter）
+3. `POST /v1/chat/completions` 返回中包含 `usage.prompt_tokens`、`usage.completion_tokens`、`usage.latency_ms`。
+4. nginx把api反代到`http://<云服务器IP>/v1/chat/completions`
+5. 作业文档中需包含：
+   - 一段 `curl` 调用与返回结果截图（需能看到 `usage` 字段）
+   - `healthz`、`readyz` 调用结果（200）
+   - 接口地址
 
 ---
 
@@ -144,4 +242,3 @@ curl localhost:80
 ---
 
 ## 注意：云服务器保留至 3月16日 即可，之后请及时释放云服务器实例，避免持续扣费
-
