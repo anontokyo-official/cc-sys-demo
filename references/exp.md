@@ -15,7 +15,7 @@
   * `GET /metrics`（Prometheus 指标）
 * 支持两种后端（通过配置切换）
 
-  1. SaaS 模型（硅基流动）
+  1. SaaS 模型（OpenRouter）
   2. 本地模型（Ollama）
 * 支持 RAG：文档入库→向量检索→拼接上下文→生成答案
 * 支持缓存（Redis）、基本鉴权与限流、可观测性、扩缩容策略
@@ -69,7 +69,7 @@ coursebot/
 
 # M0（第 1–2 次，2 周）——阿里云 + Nginx + 博客 + CourseBot API 初版
 
-**目标**：前两周完成从“云上站点上线”到“CourseBot API 可调用”的闭环，并固定 SaaS 平台为硅基流动（优先使用免费模型）。
+**目标**：前两周完成从“云上站点上线”到“CourseBot API 可调用”的闭环，并固定 SaaS 平台为 OpenRouter（优先使用免费模型）。
 **新增能力**：云主机开通、基础运维、Nginx、API 网关、统一 LLM 接口、usage 日志统计。
 
 ### 具体步骤
@@ -85,7 +85,7 @@ coursebot/
 5. 第 2 周：`services/llm-adapter` 定义统一接口并实现两个 provider：
 
    * `FakeProvider`（本地调试）
-   * `SaaSProvider`（固定为硅基流动）
+   * `SaaSProvider`（固定为 OpenRouter）
 6. 第 2 周：在 gateway 返回中新增 `usage` 字段，并记录日志：
 
    * `prompt_tokens`、`completion_tokens`、`latency_ms`
@@ -99,7 +99,7 @@ coursebot/
 * 浏览器可通过公网地址访问博客首页
 * 给出 Nginx 配置片段与部署截图
 * `make demo` 可调用 `POST /v1/chat/completions`，并返回 `usage`
-* README 同时包含“云主机初始化手册”和“硅基流动接入说明”
+* README 同时包含“云主机初始化手册”和“OpenRouter 接入说明”
 * 日志中能看到 latency 与 token 统计字段
 
 ---
@@ -123,7 +123,7 @@ Ollama 用 Docker 跑是非常教学友好的标准路径。([Ollama 文档][2])
 4. 在 gateway 实现“模型名称前缀映射”路由：
 
    * `ollama/<model>` 映射到 Ollama 的 `<model>`
-   * `saas/<model>` 映射到硅基流动的 `<model>`
+   * `saas/<model>` 映射到 OpenRouter 的 `<model>`
    * 统一由 `model` 字段决定后端，不再使用 `LLM_PROVIDER=...` 二选一
 5. 加一个回归测试：
 

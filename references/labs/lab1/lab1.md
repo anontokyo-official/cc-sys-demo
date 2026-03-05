@@ -142,7 +142,7 @@ coursebot/
    - `GET /readyz`
    
 2. 创建 `services/llm-adapter`，定义统一 Provider 接口，并实现：
-   - `FakeProvider`（占位，目的是看你的实现是否面向对象）
+   - `FakeProvider`（用于本地/测试环境：不调用任何外部模型接口，需严格实现统一 Provider 接口，并可通过配置与 `SaaSProvider` 无缝切换；可返回固定或可预测结果，用于验证你的抽象/解耦是否成立）
    - `SaaSProvider`（目前固定使用openrouter，可优先选择免费模型）
    
 3. `POST /v1/chat/completions` 的响应中必须包含 `usage` 字段，至少包括：
@@ -152,6 +152,10 @@ coursebot/
    - `latency_ms`
    
    **具体可参考OpenAI官方文档，或直接问AI「openai格式接口的/v1/chat/completions请求，response长什么样，usage中prompt_tokens、completion_tokens、latency_ms这三个东西放在哪，举例说明」**
+   
+   可以直接vibe coding（codex现在已经免费用了），不需要你写一行代码
+   
+   https://github.com/tukuaiai/vibe-coding-cn 这个也看看
 
 ### 演示方式
 
@@ -213,7 +217,7 @@ OK接口可用，之后由你自己写代码了。
 1. 在云服务器上搭建一个博客。你可以自由地选择博客框架（如 WordPress、Typecho、Hexo 等）以及搭建方式。
 2. 通过 Nginx 配置反向代理，使得访问 `http://<云服务器IP>/blog ` 时即为你的博客首页。
 3. 完成后，在博客发布一篇博文，其内容应包含"SYSU-SSE"字样。
-4. **将这篇博文的链接写进作业文档**（请确保该链接在本次作业提交DDL之后的至少3天内可访问，即云服务器需要处于启动状态），无需其他文字及配图 。
+4. 截图，包括地址栏、页面内容，放作业文档
 
 ------
 
@@ -229,16 +233,12 @@ OK接口可用，之后由你自己写代码了。
 3. `POST /v1/chat/completions` 返回中包含 `usage.prompt_tokens`、`usage.completion_tokens`、`usage.latency_ms`。
 4. nginx把api反代到`http://<云服务器IP>/v1/chat/completions`
 5. 作业文档中需包含：
-   - 一段 `curl` 调用与返回结果截图（需能看到 `usage` 字段）
-   - `healthz`、`readyz` 调用结果（200）
-   - 接口地址
+   - 一段 `curl` 调用与返回结果截图（要访问公网+反代的地址）
+   - `healthz`、`readyz` 调用结果（200）截图
 
 ---
 
-**提交 DDL 及提交方式**：
+# **提交 DDL 及提交方式**
 
-请于【**2025.03.12 23:59**】前，将作业PDF文件（文件命名为 **姓名-学号-第一次作业**，如 张三-23232323-第一次作业.pdf）发送至邮箱 【**[dengzl11@163.com](mailto:dengzl11@163.com)】**，邮件标题格式： **姓名-学号-第一次作业**
+请于【**2025.03.17 23:59**】前，将作业PDF文件（文件命名为 **姓名-学号.pdf**，如 张三-114514.pdf）（不超过5M，超了压缩下）提交到：https://docs.qq.com/form/page/DSm9uenNkc0tLd2pX
 
----
-
-## 注意：云服务器保留至 3月16日 即可，之后请及时释放云服务器实例，避免持续扣费
